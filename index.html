@@ -564,6 +564,11 @@ try {
   D = stored ? JSON.parse(stored) : null;
   if(!D || !D.users) D = null;
 } catch(e) { D = null; }
+// Versiecheck: als lokale data ouder is dan app, reset naar nieuwste versie
+if(D && (D._appVersion||0) < (OCM_INIT._appVersion||1)){
+  console.log('Lokale data versie '+(D._appVersion||0)+' < app versie '+(OCM_INIT._appVersion||1)+' — reset');
+  D = null;
+}
 if(!D) { D = JSON.parse(JSON.stringify(OCM_INIT)); save(); }
 // Migreer oude data - voeg nieuwe keys toe als ze ontbreken
 if(!D.season_history) D.season_history = [];
