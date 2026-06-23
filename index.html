@@ -580,20 +580,11 @@ let lastSyncTs = 0;
 let isSyncing = false;
 // ===== JSONBIN AUTO-CONFIG =====
 (function(){
-  try {
-    const existing = JSON.parse(localStorage.getItem('ocm_sync_cfg'));
-    if(!existing || !existing.binId){
-      localStorage.setItem('ocm_sync_cfg', JSON.stringify({
-        binId: '6a392fcaf5f4af5e291ce494',
-        apiKey: '$2a$10$MX1Es6uaW8lxilrvNTYdXucpBnllbYxID/zxC30C2gaBwG9FnaUdi'
-      }));
-    }
-  } catch(e){
-    localStorage.setItem('ocm_sync_cfg', JSON.stringify({
-      binId: '6a392fcaf5f4af5e291ce494',
-      apiKey: '$2a$10$MX1Es6uaW8lxilrvNTYdXucpBnllbYxID/zxC30C2gaBwG9FnaUdi'
-    }));
-  }
+  // Altijd de correcte sync config instellen — overschrijft oude/verkeerde config
+  localStorage.setItem('ocm_sync_cfg', JSON.stringify({
+    binId: '6a392fcaf5f4af5e291ce494',
+    apiKey: '$2a$10$MX1Es6uaW8lxilrvNTYdXucpBnllbYxID/zxC30C2gaBwG9FnaUdi'
+  }));
 })();
 
 
