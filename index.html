@@ -17,20 +17,25 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 /* LOGIN */
 #loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column}
-.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:480px}
-.login-logo{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:2px;text-align:center}
+.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:32px;width:360px;max-width:95vw}
+.login-logo{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:4px;text-align:center}
 .login-logo span{color:var(--blue)}
-.login-sub{font-size:12px;color:var(--muted);margin-bottom:20px;text-align:center}
-.user-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:16px;max-height:260px;overflow-y:auto}
-.user-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .15s}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:24px;text-align:center}
+.user-grid{display:none}
+.login-select-wrap{position:relative;margin-bottom:14px}
+.login-select{width:100%;padding:12px 40px 12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;transition:border-color .15s}
+.login-select:focus{border-color:var(--blue)}
+.login-select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:12px}
+.login-select option{background:var(--bg2);color:var(--text);padding:8px}
+.user-card{display:none}
 .user-card:hover,.user-card.selected{border-color:var(--blue);background:#0a1829}
 .uc-name{font-size:11px;font-weight:600;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .uc-role{font-size:10px;color:var(--dim)}
 .uc-team{font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pin-row{display:flex;gap:8px}
-.pin-inp{flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:16px;text-align:center;letter-spacing:8px}
+.pin-row{display:flex;gap:10px;flex-direction:column}
+.pin-inp{flex:1;padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:16px;text-align:center;letter-spacing:8px}
 .pin-inp:focus{outline:none;border-color:var(--blue)}
-.login-btn{padding:10px 20px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.login-btn{padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-size:14px;width:100%;transition:background .15s}
 .login-btn:hover{background:var(--blue2)}
 .login-err{font-size:11px;color:var(--red);margin-top:6px;text-align:center;min-height:16px}
 
@@ -428,6 +433,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .toast-notif-title{font-weight:700;font-size:13px;margin-bottom:4px}
 .toast-notif-body{font-size:12px;color:var(--muted)}
 
+#loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
 </style>
 </head>
 <body>
@@ -438,10 +444,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="login-logo">OCM <span>Manager</span></div>
     <div class="login-sub">EA Sports FC 26 — Seizoen 1 — Selecteer account</div>
     <div class="user-grid" id="userGrid"></div>
+    <div class="login-select-wrap">
+      <select class="login-select" id="userSelect" onchange="onSelectUser(this)">
+        <option value="">— Kies je account —</option>
+      </select>
+      <span class="login-select-arrow">▾</span>
+    </div>
     <div class="pin-row">
-      <input class="pin-inp" id="pinInput" type="password" maxlength="4" placeholder="PIN" oninput="clearLoginErr()">
+      <input class="pin-inp" id="pinInput" type="password" maxlength="5" placeholder="PIN (5 cijfers)" oninput="clearLoginErr()" onkeydown="if(event.key==='Enter')doLogin()">
       <button class="login-btn" onclick="doLogin()">Inloggen →</button>
-      
     </div>
     <div class="login-err" id="loginErr"></div>
   </div>
@@ -749,8 +760,24 @@ function clearSyncCfg(){
 
 // ===== AUTH =====
 let CU = null;
+function onSelectUser(sel){
+  // Sync dropdown selectie naar hidden user-card voor compatibiliteit
+  document.querySelectorAll('.user-card').forEach(c=>c.classList.remove('selected'));
+  const uid = sel.value;
+  if(uid){
+    const card = document.querySelector('.user-card[data-uid="'+uid+'"]');
+    if(card) card.classList.add('selected');
+  }
+  document.getElementById('pinInput').focus();
+}
+
 function doLogin(){
-  const sel = document.querySelector('.user-card.selected');
+  // Probeer eerst dropdown
+  const dropdown = document.getElementById('userSelect');
+  const dropVal = dropdown ? dropdown.value : '';
+  const sel = dropVal
+    ? document.querySelector('.user-card[data-uid="'+dropVal+'"]')
+    : document.querySelector('.user-card.selected');
   const pin = document.getElementById('pinInput').value;
   if(!sel){ setErr('Selecteer een account.'); return; }
   const u = D.users.find(x=>x.id===parseInt(sel.dataset.uid));
@@ -791,6 +818,19 @@ const S={panel:'standings',league:'Premier League',selTeam:null,posFilter:'ALL',
 
 // ===== INIT LOGIN =====
 function initLogin(){
+  // Vul dropdown
+  const sel = document.getElementById('userSelect');
+  if(sel){
+    sel.innerHTML = '<option value="">— Kies je account —</option>';
+    D.users.forEach(u=>{
+      const t=u.team_id?T(u.team_id):null;
+      const opt=document.createElement('option');
+      opt.value=u.id;
+      opt.textContent=u.name+(t?' — '+t.name:'');
+      sel.appendChild(opt);
+    });
+  }
+  // Oude user-card grid ook nog vullen (voor compatibiliteit)
   document.getElementById('userGrid').innerHTML=D.users.map(u=>{
     const t=u.team_id?T(u.team_id):null;
     const rl={admin:'👑 Beheerder',league_admin:'🛡 League Admin',club_owner:'⚽ Manager',viewer:'👁 Kijker'}[u.role]||u.role;
@@ -1059,7 +1099,7 @@ function renderSquads(){
       ${pos.map(p=>`<div class="ppill ${S.posFilter===p?'active':''}" onclick="S.posFilter='${p}';renderSquads()">${p}</div>`).join('')}
     </div>
     <table class="ptbl">
-      <thead><tr><th>#</th><th>Naam</th><th>Pos</th><th>Rat</th><th>Pot</th><th>Leeft</th><th>Contract</th><th>Status</th><th>⚽</th><th>🎯</th><th>🟨</th>
+      <thead><tr><th>#</th><th>Naam</th><th>Pos</th><th>Rat</th><th>Leeft</th><th>Contract</th><th>Status</th><th>⚽</th><th>🎯</th><th>🟨</th>
       </tr></thead>
       <tbody>${filt.length?filt.map((p,i)=>{
         const cs=p.contract_seasons||1;
@@ -1072,7 +1112,7 @@ function renderSquads(){
           <td><span class="plink" onclick="openProfile(${p.id})">${p.Name}</span></td>
           <td><span class="ptag ${p.Position==='GK'?'ptag-gk':''}">${p.Position}</span></td>
           <td><span class="rat ${ratC(p.Rating)}">${p.Rating}</span></td>
-          <td style="color:var(--teal)">${p.potential||p.Rating}</td>
+          
           <td style="color:var(--dim)">${p.age||'—'}</td>
           <td>${cbadge}</td>
           <td>${status}</td>
@@ -2981,7 +3021,6 @@ function renderFreeAgentsList(){
           <div style="font-size:12px;font-weight:600">${p.Name}</div>
           <div style="font-size:10px;color:var(--muted)">${p.Position} · ${p.Nation} · ${p.Club}</div>
         </div>
-        <div style="font-size:11px;color:var(--muted)">Pot: ${p.potential||p.Rating}</div>
         ${isOnAuc?
           `<div style="font-size:10px;font-weight:700;color:var(--yellow);background:rgba(245,158,11,.15);padding:3px 8px;border-radius:4px">🔨 OP VEILING</div>`:
           (canEdit()?`<button onclick="quickListAuction(${p.id})" style="padding:4px 10px;background:var(--yellow);border:none;border-radius:5px;color:#000;cursor:pointer;font-size:11px;font-weight:600">🔨 Veiling</button>`:'')
