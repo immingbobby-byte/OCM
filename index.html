@@ -586,8 +586,55 @@ try {
   D = stored ? JSON.parse(stored) : null;
   if(!D || !D.users) D = null;
 } catch(e) { D = null; }
-if(!D) { D = JSON.parse(JSON.stringify(OCM_INIT)); save(); }
-// Migreer oude data - voeg nieuwe keys toe als ze ontbreken
+
+if(!D) {
+  // Eerste keer: laad OCM_INIT volledig
+  D = JSON.parse(JSON.stringify(OCM_INIT));
+} else {
+  // Slimme migratie: bewaar uitslagen/transfers, update teams/spelers/schema
+  const localV  = D._appVersion || 0;
+  const appV    = OCM_INIT._appVersion || 1;
+  if(localV < appV){
+    // Bewaar gespeelde data
+    const bewaar = {
+      schedule:     D.schedule,
+      transfers:    D.transfers,
+      news:         D.news,
+      bids:         D.bids,
+      season_history: D.season_history,
+      auction_listings: D.auction_listings,
+      auction_bids: D.auction_bids,
+      auction_closed: D.auction_closed,
+      votes_potm:   D.votes_potm,
+      votes_pots:   D.votes_pots,
+      current_season:    D.current_season,
+      current_gameweek:  D.current_gameweek,
+    };
+    // Reset naar nieuwe versie
+    D = JSON.parse(JSON.stringify(OCM_INIT));
+    // Herstel gespeelde data
+    if(bewaar.schedule && bewaar.schedule.some(m=>m.played)){
+      // Kopieer uitslagen terug naar nieuwe schema
+      bewaar.schedule.forEach(old=>{
+        const nieuw = D.schedule.find(m=>m.home_id===old.home_id&&m.away_id===old.away_id&&m.gameweek===old.gameweek);
+        if(nieuw && old.played){ Object.assign(nieuw, old, {id:nieuw.id}); }
+      });
+    }
+    if(bewaar.transfers && bewaar.transfers.length) D.transfers = bewaar.transfers;
+    if(bewaar.news && bewaar.news.length) D.news = bewaar.news;
+    if(bewaar.season_history && bewaar.season_history.length) D.season_history = bewaar.season_history;
+    if(bewaar.current_season > 1) D.current_season = bewaar.current_season;
+    if(bewaar.current_gameweek > 1) D.current_gameweek = bewaar.current_gameweek;
+    D.bids = bewaar.bids || {};
+    D.auction_listings = bewaar.auction_listings || [];
+    D.auction_bids = bewaar.auction_bids || {};
+    D.auction_closed = bewaar.auction_closed || [];
+    D.votes_potm = bewaar.votes_potm || {};
+    D.votes_pots = bewaar.votes_pots || {};
+  }
+}
+
+// Altijd: voeg ontbrekende keys toe
 if(!D.season_history) D.season_history = [];
 if(!D.auction_listings) D.auction_listings = [];
 if(!D.auction_bids) D.auction_bids = {};
@@ -595,6 +642,9 @@ if(!D.auction_closed) D.auction_closed = [];
 if(!D.votes_potm) D.votes_potm = {};
 if(!D.votes_pots) D.votes_pots = {};
 if(!D.h2h_matrix) D.h2h_matrix = {};
+if(!D.free_agents) D.free_agents = OCM_INIT.free_agents || [];
+// Migreer contract_until naar contract_expires
+D.players.forEach(p=>{ if(!p.contract_expires) p.contract_expires = (D.current_season||1) + (p.contract_until||1); });
 save();
 // ===== JSONBIN CLOUD SYNC ENGINE =====
 
